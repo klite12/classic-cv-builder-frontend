@@ -460,6 +460,59 @@ function sectionsFor(cv) {
   return out;
 }
 
+// Drives the completion checklist/progress bar shown in the CV wizard.
+function cvCompleteness(cv) {
+  const checklist = [
+    { key: "personal", label: "Personal Information", done: !!(cv.personal.fullName && cv.personal.email) },
+    { key: "summary", label: "Professional Summary", done: !!cv.summary.trim() },
+    { key: "experience", label: "Work Experience", done: cv.experience.length > 0 },
+    { key: "education", label: "Education", done: cv.education.length > 0 },
+    { key: "skills", label: "Skills", done: cv.skills.length > 0 },
+    { key: "certifications", label: "Certifications", done: cv.certifications.length > 0 },
+  ];
+  const doneCount = checklist.filter((c) => c.done).length;
+  return { checklist, percent: Math.round((doneCount / checklist.length) * 100) };
+}
+
+function CompletionBar({ cv }) {
+  const [expanded, setExpanded] = useState(false);
+  const { checklist, percent } = cvCompleteness(cv);
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <button onClick={() => setExpanded((v) => !v)} style={{ width: "100%", background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: T.charcoal }}>Your CV is {percent}% complete</span>
+          <Icon name="chevron-right" size={13} color={T.muted} style={{ transform: expanded ? "rotate(90deg)" : "none", transition: "transform .15s" }} />
+        </div>
+        <div style={{ height: 6, borderRadius: 999, background: T.hair2, overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${percent}%`, background: percent === 100 ? T.gold : T.steel, transition: "width .3s" }} />
+        </div>
+      </button>
+      {expanded && (
+        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 7 }}>
+          {checklist.map((c) => (
+            <div key={c.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: c.done ? T.ink : T.muted }}>
+              <div style={{ width: 15, height: 15, borderRadius: 999, border: `1.4px solid ${c.done ? T.gold : T.hair}`, background: c.done ? T.gold : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {c.done && <Icon name="check" size={9} color="#fff" />}
+              </div>
+              {c.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SaveIndicator({ status }) {
+  if (status === "idle") return <div style={{ height: 16 }} />;
+  return (
+    <div style={{ fontSize: 11.5, color: status === "saving" ? T.muted : T.gold, display: "flex", alignItems: "center", gap: 5, height: 16, marginBottom: 2 }}>
+      {status === "saving" ? "Saving…" : (<><Icon name="check" size={11} color={T.gold} /> Saved just now</>)}
+    </div>
+  );
+}
+
 function fmtRange(a, b, cur) {
   if (!a && !b) return "";
   return `${a || ""} — ${cur ? "Present" : b || ""}`;
@@ -1300,7 +1353,9 @@ function CVWizard({ initial, onExit, onSave, onPreview, toast }) {
   const [cv, patch, setCV] = useCVDraft(initial);
   const [step, setStep] = useState(0);
   const [nameEditing, setNameEditing] = useState(false);
+  const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved
   const saveTimer = useRef(null);
+  const statusTimer = useRef(null);
   const cvRef = useRef(cv);
   cvRef.current = cv;
 
@@ -1310,8 +1365,12 @@ function CVWizard({ initial, onExit, onSave, onPreview, toast }) {
   // fire a network call on every keystroke.
   const doSave = useCallback(async () => {
     const current = cvRef.current;
+    setSaveStatus("saving");
     try {
       const saved = await onSave(current);
+      setSaveStatus("saved");
+      clearTimeout(statusTimer.current);
+      statusTimer.current = setTimeout(() => setSaveStatus("idle"), 2500);
       if (saved && (saved.id !== current.id || saved._serverId !== current._serverId)) {
         const merged = { ...current, id: saved.id, _serverId: saved._serverId };
         cvRef.current = merged;
@@ -1320,6 +1379,7 @@ function CVWizard({ initial, onExit, onSave, onPreview, toast }) {
       }
       return current;
     } catch (e) {
+      setSaveStatus("idle");
       toast(e?.message || "Couldn't save your changes.");
       return current;
     }
@@ -1353,11 +1413,13 @@ function CVWizard({ initial, onExit, onSave, onPreview, toast }) {
         {nameEditing ? (
           <Input autoFocus value={cv.name} onBlur={() => setNameEditing(false)} onKeyDown={(e) => e.key === "Enter" && setNameEditing(false)} onChange={(e) => patch({ name: e.target.value })} style={{ marginBottom: 16, fontWeight: 700 }} />
         ) : (
-          <button onClick={() => setNameEditing(true)} style={{ background: "none", border: "none", padding: 0, marginBottom: 18, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+          <button onClick={() => setNameEditing(true)} style={{ background: "none", border: "none", padding: 0, marginBottom: 6, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontFamily: "Georgia, serif", fontSize: 17, color: T.ink }}>{cv.name}</span>
             <Icon name="edit" size={13} color={T.muted} />
           </button>
         )}
+        <SaveIndicator status={saveStatus} />
+        <CompletionBar cv={cv} />
         <StepComp cv={cv} patch={patch} toast={toast} />
       </div>
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, maxWidth: 480, margin: "0 auto", padding: "12px 18px 18px", background: `linear-gradient(${T.paper}00, ${T.paper} 22%)`, display: "flex", gap: 10 }}>
@@ -1854,6 +1916,120 @@ function Logo({ size = 64 }) {
   );
 }
 
+function Section({ children, style }) {
+  return <div style={{ marginTop: 40, ...style }}>{children}</div>;
+}
+function SectionTitle({ children }) {
+  return <div style={{ fontFamily: "Georgia, serif", fontSize: 19, fontWeight: 700, color: T.ink, marginBottom: 14, textAlign: "center" }}>{children}</div>;
+}
+
+function TrustIndicators() {
+  const items = ["ATS-Friendly Templates", "Professional Designs", "Easy PDF Export", "No Design Skills Required"];
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, marginBottom: 8 }}>
+      {items.map((t) => (
+        <span key={t} style={{ fontSize: 11, fontWeight: 600, color: T.steel, background: `${T.steel}12`, border: `1px solid ${T.steel}30`, borderRadius: 999, padding: "5px 11px", display: "inline-flex", alignItems: "center", gap: 5 }}>
+          <Icon name="check" size={11} color={T.steel} /> {t}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+const LANDING_FEATURES = [
+  { icon: "folder", title: "Professional Templates", text: "Five genuinely different layouts — pick the one that fits how you want to be read." },
+  { icon: "check", title: "ATS-Friendly", text: "Single-column templates parse cleanly through applicant tracking systems." },
+  { icon: "edit", title: "Live Preview", text: "See exactly what you'll export, updated as you type." },
+  { icon: "download", title: "Easy Export", text: "Download a print-ready PDF in one tap, no formatting fuss." },
+  { icon: "globe", title: "Works Anywhere", text: "Build and edit your CV from your phone, tablet, or computer." },
+  { icon: "copy", title: "Multiple CVs", text: "Keep separate versions tailored to different roles or industries." },
+];
+
+function FeatureGrid() {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+      {LANDING_FEATURES.map((f) => (
+        <Card key={f.title} style={{ padding: 14 }}>
+          <div style={{ width: 30, height: 30, borderRadius: 8, background: `${T.gold}18`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+            <Icon name={f.icon} size={15} color={T.gold} />
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: T.ink, marginBottom: 4 }}>{f.title}</div>
+          <div style={{ fontSize: 11.5, color: T.muted, lineHeight: 1.45 }}>{f.text}</div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function HowItWorks() {
+  const steps = [
+    { n: "01", title: "Choose a Template", text: "Pick a professional layout that fits your field." },
+    { n: "02", title: "Add Your Information", text: "Enter your experience, education, skills, and achievements." },
+    { n: "03", title: "Download & Apply", text: "Export a polished PDF and start sending applications." },
+  ];
+  return (
+    <div>
+      {steps.map((s) => (
+        <div key={s.n} style={{ display: "flex", gap: 14, marginBottom: 18, alignItems: "flex-start" }}>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 700, color: `${T.gold}90`, width: 34, flexShrink: 0 }}>{s.n}</div>
+          <div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: T.ink, marginBottom: 3 }}>{s.title}</div>
+            <div style={{ fontSize: 12.5, color: T.muted, lineHeight: 1.5 }}>{s.text}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Sample/placeholder copy for the landing page — not real customer quotes.
+// Replace with genuine testimonials once the app has real users.
+const DEMO_TESTIMONIALS = [
+  { quote: "Having every template render as a live preview instead of a static image made picking one so much easier.", name: "Demo quote — replace with a real user testimonial", role: "" },
+  { quote: "The step-by-step builder meant I never felt like I was staring at one giant form.", name: "Demo quote — replace with a real user testimonial", role: "" },
+];
+
+function Testimonials() {
+  return (
+    <div>
+      {DEMO_TESTIMONIALS.map((t, i) => (
+        <Card key={i} style={{ padding: 16, marginBottom: 10 }}>
+          <div style={{ fontSize: 13, color: T.ink, lineHeight: 1.55, fontStyle: "italic", marginBottom: 8 }}>&ldquo;{t.quote}&rdquo;</div>
+          <div style={{ fontSize: 11.5, color: T.muted }}>{t.name}</div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+const FAQ_ITEMS = [
+  { q: "How does Classic CV Builder work?", a: "Pick a template, fill in your details step by step, and preview updates live as you go. Export to PDF whenever you're ready." },
+  { q: "Can I create multiple CVs?", a: "Yes — save as many as you need, e.g. tailored to different roles or industries." },
+  { q: "Can I create a cover letter too?", a: "Yes, a separate builder generates a cover letter from your details in a style you choose." },
+  { q: "Can I download my CV as a PDF?", a: "Yes — the preview screen has a Download PDF option that opens your browser's print dialog; choose \"Save as PDF.\"" },
+  { q: "Can I use this on my phone?", a: "Yes, the web app works on any device with a browser. A native Android app is also planned." },
+];
+
+function FAQAccordion() {
+  const [open, setOpen] = useState(null);
+  return (
+    <div>
+      {FAQ_ITEMS.map((item, i) => (
+        <div key={i} style={{ borderBottom: `1px solid ${T.hair2}` }}>
+          <button
+            onClick={() => setOpen(open === i ? null : i)}
+            style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 2px", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{item.q}</span>
+            <Icon name="chevron-right" size={14} color={T.muted} style={{ transform: open === i ? "rotate(90deg)" : "none", transition: "transform .15s", flexShrink: 0, marginLeft: 10 }} />
+          </button>
+          {open === i && <div style={{ fontSize: 12.5, color: T.muted, lineHeight: 1.55, paddingBottom: 14 }}>{item.a}</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Landing({ onLaunch }) {
   const sample = {
     ...newCV(), templateId: "classic",
@@ -1879,20 +2055,47 @@ function Landing({ onLaunch }) {
           </div>
         </div>
 
-        <Button full size="lg" variant="primary" onClick={onLaunch} style={{ marginBottom: 34 }}>
+        <Button full size="lg" variant="primary" onClick={onLaunch} style={{ marginBottom: 16 }}>
           Open Web App <Icon name="chevron-right" color="#fff" size={16} />
         </Button>
+        <TrustIndicators />
 
-        <div style={{ fontSize: 12, fontWeight: 700, color: T.muted, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 12, textAlign: "center" }}>
-          Or Download for Android
-        </div>
-        <DownloadButton item={DOWNLOAD_LINKS.apk} />
-        <DownloadButton item={DOWNLOAD_LINKS.amazon} />
-        <DownloadButton item={DOWNLOAD_LINKS.samsung} />
-        <DownloadButton item={DOWNLOAD_LINKS.huawei} />
+        <Section>
+          <SectionTitle>Why Classic CV Builder</SectionTitle>
+          <FeatureGrid />
+        </Section>
+
+        <Section>
+          <SectionTitle>How It Works</SectionTitle>
+          <HowItWorks />
+        </Section>
+
+        <Section>
+          <SectionTitle>What People Say</SectionTitle>
+          <Testimonials />
+        </Section>
+
+        <Section>
+          <SectionTitle>Frequently Asked Questions</SectionTitle>
+          <FAQAccordion />
+        </Section>
+
+        <Section style={{ marginTop: 44 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.muted, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 12, textAlign: "center" }}>
+            Or Download for Android
+          </div>
+          <DownloadButton item={DOWNLOAD_LINKS.apk} />
+          <DownloadButton item={DOWNLOAD_LINKS.amazon} />
+          <DownloadButton item={DOWNLOAD_LINKS.samsung} />
+          <DownloadButton item={DOWNLOAD_LINKS.huawei} />
+        </Section>
 
         <div style={{ fontSize: 11.5, color: T.muted, textAlign: "center", marginTop: 26, lineHeight: 1.5 }}>
           No Google Play account needed for any of the options above.
+        </div>
+
+        <div style={{ marginTop: 46, paddingTop: 22, borderTop: `1px solid ${T.hair2}`, textAlign: "center" }}>
+          <div style={{ fontSize: 11, color: T.muted }}>&copy; {new Date().getFullYear()} Classic CV Builder</div>
         </div>
       </div>
     </div>
