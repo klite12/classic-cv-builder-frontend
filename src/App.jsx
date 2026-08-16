@@ -12,19 +12,19 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
    ========================================================================= */
 
 const T = {
-  paper: "#FAF9F5",
-  ink: "#1C2430",
-  navy: "#1F2E45",
-  navyDeep: "#141C2A",
-  charcoal: "#3A3F44",
-  hair: "#DCD6C6",
-  hair2: "#E9E4D8",
-  gold: "#96772E",
-  goldSoft: "#B99A55",
-  steel: "#4C6482",
-  muted: "#74716A",
+  paper: "#FBF7EE",
+  ink: "#16332C",
+  navy: "#0E4B3F",
+  navyDeep: "#082A22",
+  charcoal: "#2E4A42",
+  hair: "#E3D5B6",
+  hair2: "#F1E7D2",
+  gold: "#C1852E",
+  goldSoft: "#DDA857",
+  steel: "#8A5A2E",
+  muted: "#77705F",
   surface: "#FFFFFF",
-  danger: "#8C3A2B",
+  danger: "#9C3B2A",
 };
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -1903,15 +1903,15 @@ function DownloadButton({ item }) {
 function Logo({ size = 64 }) {
   return (
     <svg viewBox="0 0 64 64" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
-      <rect x="2" y="2" width="60" height="60" rx="15" fill="#1F2E45" />
-      <path d="M20 15 H38 L46 23 V49 A2 2 0 0 1 44 51 H20 A2 2 0 0 1 18 49 V17 A2 2 0 0 1 20 15 Z" fill="#FAF9F5" stroke="#96772E" strokeWidth="1.2" />
-      <path d="M38 15 V21 A2 2 0 0 0 40 23 H46 Z" fill="#E9E4D8" />
-      <line x1="23" y1="29" x2="41" y2="29" stroke="#1F2E45" strokeWidth="1.6" strokeLinecap="round" />
-      <line x1="23" y1="34" x2="41" y2="34" stroke="#1F2E45" strokeWidth="1.6" strokeLinecap="round" />
-      <line x1="23" y1="39" x2="34" y2="39" stroke="#1F2E45" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M40 42 L46 48 L44 58 L40 54 L36 58 L34 48 Z" fill="#96772E" />
-      <circle cx="40" cy="46" r="6.5" fill="#B99A55" stroke="#1F2E45" strokeWidth="1.2" />
-      <path d="M37.2 46 L39.2 48 L43 43.8" fill="none" stroke="#1F2E45" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="2" y="2" width="60" height="60" rx="15" fill={T.navy} />
+      <path d="M20 15 H38 L46 23 V49 A2 2 0 0 1 44 51 H20 A2 2 0 0 1 18 49 V17 A2 2 0 0 1 20 15 Z" fill={T.paper} stroke={T.gold} strokeWidth="1.2" />
+      <path d="M38 15 V21 A2 2 0 0 0 40 23 H46 Z" fill={T.hair2} />
+      <line x1="23" y1="29" x2="41" y2="29" stroke={T.navy} strokeWidth="1.6" strokeLinecap="round" />
+      <line x1="23" y1="34" x2="41" y2="34" stroke={T.navy} strokeWidth="1.6" strokeLinecap="round" />
+      <line x1="23" y1="39" x2="34" y2="39" stroke={T.navy} strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M40 42 L46 48 L44 58 L40 54 L36 58 L34 48 Z" fill={T.gold} />
+      <circle cx="40" cy="46" r="6.5" fill={T.goldSoft} stroke={T.navy} strokeWidth="1.2" />
+      <path d="M37.2 46 L39.2 48 L43 43.8" fill="none" stroke={T.navy} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
