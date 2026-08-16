@@ -1745,7 +1745,8 @@ function Profile({ toast, session, onSignOut, onOpenAuth, onOpenServerSettings, 
         <Row icon="crown" label="Subscription" onClick={onUpgrade} />
         <Row icon="lock" label="Privacy" onClick={() => toast("Not wired up in this preview.")} />
         <Row icon="help" label="Help & Support" onClick={() => toast("Not wired up in this preview.")} />
-        <Row icon="info" label="About" onClick={() => toast("Classic CV Builder — preview build.")} />
+        <Row icon="info" label="About" onClick={() => toast("Classic CV Builder.")} />
+        <Row icon="home" label="Back to Homepage" onClick={() => { window.location.hash = ""; }} />
       </div>
     </div>
   );
@@ -1781,7 +1782,111 @@ function BottomNav({ tab, setTab }) {
    ROOT APP
    ========================================================================= */
 
+/* ============================================================================
+   LANDING / DOWNLOAD PAGE
+   The public-facing marketing page — separate from the web app itself.
+   Fill in each DOWNLOAD_LINKS.*.url once that store listing (or your
+   hosted APK) actually exists; until then the button shows the note
+   instead of a dead link.
+   ========================================================================= */
+
+const DOWNLOAD_LINKS = {
+  apk: {
+    label: "Direct APK Download",
+    url: "", // e.g. a GitHub Releases asset URL, once you've built and uploaded the .apk
+    note: "Coming soon — upload a release APK (e.g. to GitHub Releases) and paste the link here.",
+  },
+  amazon: {
+    label: "Amazon Appstore",
+    url: "", // your Amazon Appstore listing URL once approved
+    note: "Coming soon — submit at developer.amazon.com/apps-and-games (free).",
+  },
+  samsung: {
+    label: "Samsung Galaxy Store",
+    url: "", // your Galaxy Store listing URL once approved
+    note: "Coming soon — submit at seller.samsungapps.com (free).",
+  },
+  huawei: {
+    label: "Huawei AppGallery",
+    url: "", // your AppGallery listing URL once approved
+    note: "Coming soon — submit at developer.huawei.com/consumer/en/appgallery.",
+  },
+};
+
+function DownloadButton({ item }) {
+  const ready = !!item.url;
+  const body = (
+    <>
+      <div style={{ width: 38, height: 38, borderRadius: 10, background: ready ? `${T.gold}18` : T.hair2, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <Icon name="download" size={17} color={ready ? T.gold : T.muted} />
+      </div>
+      <div style={{ flex: 1, textAlign: "left" }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: T.ink }}>{item.label}</div>
+        <div style={{ fontSize: 11.5, color: T.muted, marginTop: 2, lineHeight: 1.4 }}>{ready ? "Tap to download" : item.note}</div>
+      </div>
+    </>
+  );
+  const sharedStyle = {
+    display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "left",
+    padding: "12px 14px", borderRadius: 12, border: `1.3px solid ${T.hair}`, background: T.surface,
+    marginBottom: 10, textDecoration: "none", cursor: ready ? "pointer" : "default", opacity: ready ? 1 : 0.75,
+  };
+  return ready ? (
+    <a href={item.url} target="_blank" rel="noreferrer" style={sharedStyle}>{body}</a>
+  ) : (
+    <div style={sharedStyle}>{body}</div>
+  );
+}
+
+function Landing({ onLaunch }) {
+  const sample = {
+    ...newCV(), templateId: "classic",
+    personal: { ...emptyPersonal(), fullName: "Jordan Blake", title: "Product Manager", email: "jordan@email.com" },
+    summary: "Results-driven professional with a track record of delivery.",
+    experience: [{ id: "x", jobTitle: "Senior PM", company: "Acme Co", startDate: "2021", endDate: "", current: true, description: "Led cross-functional teams." }],
+    skills: [{ id: "s1", name: "Strategy" }, { id: "s2", name: "Analytics" }],
+  };
+  return (
+    <div style={{ minHeight: "100vh", background: T.paper, fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Arial, sans-serif" }}>
+      <div style={{ maxWidth: 480, margin: "0 auto", padding: "40px 24px 60px" }}>
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 26, fontWeight: 700, color: T.ink, marginBottom: 8 }}>Classic CV Builder</div>
+          <div style={{ fontSize: 14, color: T.muted, lineHeight: 1.5 }}>Create a professional CV and personalized cover letter in minutes.</div>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
+          <div style={{ boxShadow: "0 14px 34px rgba(20,20,25,.14)", borderRadius: 6, overflow: "hidden" }}>
+            <CVThumb cv={sample} width={190} />
+          </div>
+        </div>
+
+        <Button full size="lg" variant="primary" onClick={onLaunch} style={{ marginBottom: 34 }}>
+          Open Web App <Icon name="chevron-right" color="#fff" size={16} />
+        </Button>
+
+        <div style={{ fontSize: 12, fontWeight: 700, color: T.muted, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 12, textAlign: "center" }}>
+          Or Download for Android
+        </div>
+        <DownloadButton item={DOWNLOAD_LINKS.apk} />
+        <DownloadButton item={DOWNLOAD_LINKS.amazon} />
+        <DownloadButton item={DOWNLOAD_LINKS.samsung} />
+        <DownloadButton item={DOWNLOAD_LINKS.huawei} />
+
+        <div style={{ fontSize: 11.5, color: T.muted, textAlign: "center", marginTop: 26, lineHeight: 1.5 }}>
+          No Google Play account needed for any of the options above.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const [route, setRoute] = useState(() => (window.location.hash === "#/app" ? "app" : "landing"));
+  useEffect(() => {
+    const onHash = () => setRoute(window.location.hash === "#/app" ? "app" : "landing");
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
   const [ready, setReady] = useState(false);
   const [data, setData] = useState({ cvs: [], letters: [], onboarded: false });
   const [tab, setTab] = useState("home");
@@ -1935,6 +2040,10 @@ export default function App() {
     setData(next);
     if (!isAuthed) saveData(next);
   };
+
+  if (route === "landing") {
+    return <Landing onLaunch={() => { window.location.hash = "#/app"; setRoute("app"); }} />;
+  }
 
   if (!ready) {
     return (
