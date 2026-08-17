@@ -11,7 +11,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
    Body type: system sans (Inter stack)
    ========================================================================= */
 
-const T = {
+const LIGHT_THEME = {
   paper: "#FBF7EE",
   ink: "#16332C",
   navy: "#0E4B3F",
@@ -26,6 +26,35 @@ const T = {
   surface: "#FFFFFF",
   danger: "#9C3B2A",
 };
+
+const DARK_THEME = {
+  paper: "#0E1F1A",
+  ink: "#F1EAD9",
+  navy: "#2FA382",
+  navyDeep: "#0A2A20",
+  charcoal: "#C9D6CF",
+  hair: "#2C4A41",
+  hair2: "#1F3A32",
+  gold: "#D69A46",
+  goldSoft: "#E7BD7B",
+  steel: "#C08A52",
+  muted: "#93A69D",
+  surface: "#16302A",
+  danger: "#D9584A",
+};
+
+// T is intentionally mutable (not reassigned, just its properties updated) —
+// every component reads T.xxx at render time via closure, so mutating it in
+// place and re-rendering the tree is enough to re-theme the whole app
+// without threading a theme prop/context through every component.
+let T = { ...LIGHT_THEME };
+function applyThemeMode(mode) {
+  Object.assign(T, mode === "dark" ? DARK_THEME : LIGHT_THEME);
+  try {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", T.navy);
+  } catch (e) { /* non-browser context */ }
+}
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 const now = () => Date.now();
@@ -1698,6 +1727,23 @@ function Row({ icon, label, right, onClick }) {
   );
 }
 
+function InfoModal({ open, title, icon, onClose, children }) {
+  if (!open) return null;
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(20,20,20,.45)", zIndex: 100, display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: T.surface, width: "100%", maxWidth: 480, maxHeight: "78vh", overflowY: "auto", borderRadius: "18px 18px 0 0", padding: "22px 20px 30px" }}>
+        <div style={{ width: 36, height: 4, background: T.hair, borderRadius: 999, margin: "0 auto 18px" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+          {icon && <Icon name={icon} size={17} color={T.steel} />}
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 17, color: T.ink }}>{title}</div>
+        </div>
+        <div style={{ fontSize: 13, color: T.charcoal, lineHeight: 1.65 }}>{children}</div>
+        <Button full variant="subtle" onClick={onClose} style={{ marginTop: 20 }}>Close</Button>
+      </div>
+    </div>
+  );
+}
+
 function ServerSettingsModal({ open, apiBase, onClose, onSave }) {
   const [value, setValue] = useState(apiBase);
   useEffect(() => { if (open) setValue(apiBase); }, [open, apiBase]);
@@ -1763,8 +1809,11 @@ function AuthModal({ open, onClose, session, onAuthed, toast }) {
   );
 }
 
-function Profile({ toast, session, onSignOut, onOpenAuth, onOpenServerSettings, onUpgrade }) {
+function Profile({ toast, session, onSignOut, onOpenAuth, onOpenServerSettings, onUpgrade, themeMode, onToggleTheme }) {
   const { isAuthed, user, apiBase } = session;
+  const [modal, setModal] = useState(null); // "notifications" | "language" | "privacy" | "help" | null
+  const isDark = themeMode === "dark";
+
   return (
     <div style={{ paddingBottom: 100 }}>
       <TopBar title="Profile" />
@@ -1799,17 +1848,41 @@ function Profile({ toast, session, onSignOut, onOpenAuth, onOpenServerSettings, 
 
         <div style={{ fontSize: 12, fontWeight: 700, color: T.muted, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>Account</div>
         <Row icon="globe" label="Server Connection" right={<span style={{ fontSize: 11.5, color: T.muted, maxWidth: 140, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{apiBase || "Not set"}</span>} onClick={onOpenServerSettings} />
-        <Row icon="bell" label="Notification Settings" onClick={() => toast("Not wired up in this preview.")} />
-        <Row icon="moon" label="Appearance" onClick={() => toast("Not wired up in this preview.")} />
-        <Row icon="globe" label="Language" onClick={() => toast("Not wired up in this preview.")} />
+        <Row icon="bell" label="Notification Settings" onClick={() => setModal("notifications")} />
+        <Row icon="moon" label="Appearance" right={<Toggle checked={isDark} onChange={onToggleTheme} />} />
+        <Row icon="globe" label="Language" onClick={() => setModal("language")} />
         <div style={{ height: 18 }} />
         <div style={{ fontSize: 12, fontWeight: 700, color: T.muted, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>Support &amp; Legal</div>
         <Row icon="crown" label="Subscription" onClick={onUpgrade} />
-        <Row icon="lock" label="Privacy" onClick={() => toast("Not wired up in this preview.")} />
-        <Row icon="help" label="Help & Support" onClick={() => toast("Not wired up in this preview.")} />
+        <Row icon="lock" label="Privacy" onClick={() => setModal("privacy")} />
+        <Row icon="help" label="Help & Support" onClick={() => setModal("help")} />
         <Row icon="info" label="About" onClick={() => toast("Classic CV Builder.")} />
         <Row icon="home" label="Back to Homepage" onClick={() => { window.location.hash = ""; }} />
       </div>
+
+      <InfoModal open={modal === "notifications"} title="Notification Settings" icon="bell" onClose={() => setModal(null)}>
+        Email and push notifications (like reminders to finish a CV, or AI results ready) aren't set up yet — this app doesn't send any notifications today. When they're added, you'll be able to turn each type on or off here.
+      </InfoModal>
+
+      <InfoModal open={modal === "language"} title="Language" icon="globe" onClose={() => setModal(null)}>
+        Classic CV Builder is currently available in <b>English only</b>. Additional languages may be added in a future update — there's no timeline for this yet.
+      </InfoModal>
+
+      <InfoModal open={modal === "privacy"} title="Privacy" icon="lock" onClose={() => setModal(null)}>
+        <p style={{ marginTop: 0 }}>Your CV and cover letter content is stored either locally on your device (guest mode) or, if you sign in, on the app's own server — it is never sold or shared with third parties.</p>
+        <p>Signing in sends your email and password (hashed, never stored in plain text) to the app's backend. AI writing features send only the specific text you're working on to Anthropic's API to generate suggestions.</p>
+        <p>You can delete any saved document at any time from the Documents tab. To delete your account entirely, contact support using the Help &amp; Support option below.</p>
+        <a href="/privacy.html" target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 700, color: T.gold, textDecoration: "none" }}>
+          Read the full Privacy Policy <Icon name="chevron-right" size={12} color={T.gold} />
+        </a>
+      </InfoModal>
+
+      <InfoModal open={modal === "help"} title="Help & Support" icon="help" onClose={() => setModal(null)}>
+        <p style={{ marginTop: 0 }}><b>My AI features aren't working.</b> This usually means either you're not signed in (AI requires an account) or the day's free-plan AI limit has been reached — try again tomorrow or upgrade to Premium.</p>
+        <p><b>I can't sign in / it says my account doesn't exist.</b> Make sure Server Connection (above) points to the right backend URL, and that you're using the same email you registered with.</p>
+        <p><b>My PDF export looks off.</b> Use the "Download PDF" button on the Preview screen, then choose "Save as PDF" in your browser's print dialog rather than a screenshot.</p>
+        <p style={{ marginBottom: 0 }}>For anything else, reach out to whoever gave you access to this app.</p>
+      </InfoModal>
     </div>
   );
 }
@@ -2124,6 +2197,17 @@ export default function App() {
   const [serverModalOpen, setServerModalOpen] = useState(false);
   const isAuthed = !!(token && user);
 
+  // --- Theme (light/dark) ---
+  const [themeMode, setThemeMode] = useState("light");
+  const handleToggleTheme = useCallback(() => {
+    setThemeMode((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      applyThemeMode(next);
+      setStoredValue("theme-pref", next);
+      return next;
+    });
+  }, []);
+
   const toast = useCallback((msg) => { setToastMsg(msg); clearTimeout(window.__cvToastTimer); window.__cvToastTimer = setTimeout(() => setToastMsg(""), 2400); }, []);
 
   // Boot sequence: load local data first (guest fallback is always ready
@@ -2132,10 +2216,14 @@ export default function App() {
   // instead and treat that as the source of truth.
   useEffect(() => {
     (async () => {
-      const [localData, savedBase, savedToken] = await Promise.all([
-        loadData(), getStoredValue("api-base-url"), getStoredValue("auth-token"),
+      const [localData, savedBase, savedToken, savedTheme] = await Promise.all([
+        loadData(), getStoredValue("api-base-url"), getStoredValue("auth-token"), getStoredValue("theme-pref"),
       ]);
       setData(localData);
+      if (savedTheme === "dark") {
+        setThemeMode("dark");
+        applyThemeMode("dark");
+      }
       const base = savedBase || "";
       setApiBase(base);
       if (base && savedToken) {
@@ -2342,6 +2430,8 @@ export default function App() {
         onOpenAuth={() => setAuthModalOpen(true)}
         onOpenServerSettings={() => setServerModalOpen(true)}
         onUpgrade={handleUpgrade}
+        themeMode={themeMode}
+        onToggleTheme={handleToggleTheme}
       />
     );
   }
