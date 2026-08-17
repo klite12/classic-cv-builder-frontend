@@ -1855,6 +1855,7 @@ function Profile({ toast, session, onSignOut, onOpenAuth, onOpenServerSettings, 
         <div style={{ fontSize: 12, fontWeight: 700, color: T.muted, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>Support &amp; Legal</div>
         <Row icon="crown" label="Subscription" onClick={onUpgrade} />
         <Row icon="lock" label="Privacy" onClick={() => setModal("privacy")} />
+        <Row icon="lock" label="Terms of Service" onClick={() => setModal("terms")} />
         <Row icon="help" label="Help & Support" onClick={() => setModal("help")} />
         <Row icon="info" label="About" onClick={() => toast("Classic CV Builder.")} />
         <Row icon="home" label="Back to Homepage" onClick={() => { window.location.hash = ""; }} />
@@ -1874,6 +1875,15 @@ function Profile({ toast, session, onSignOut, onOpenAuth, onOpenServerSettings, 
         <p>You can delete any saved document at any time from the Documents tab. To delete your account entirely, contact support using the Help &amp; Support option below.</p>
         <a href="/privacy.html" target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 700, color: T.gold, textDecoration: "none" }}>
           Read the full Privacy Policy <Icon name="chevron-right" size={12} color={T.gold} />
+        </a>
+      </InfoModal>
+
+      <InfoModal open={modal === "terms"} title="Terms of Service" icon="lock" onClose={() => setModal(null)}>
+        <p style={{ marginTop: 0 }}>You own the CV and cover letter content you create — the app only stores and processes it to provide the service you're using (saving, exporting, generating AI suggestions when you request them).</p>
+        <p>AI-generated suggestions are a drafting aid, not a guarantee — always review them before use. Using this app doesn't guarantee any particular job outcome, and it isn't professional career or legal advice.</p>
+        <p>Premium subscriptions renew automatically through Stripe (or your app store, if installed that way) until you cancel.</p>
+        <a href="/terms.html" target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 700, color: T.gold, textDecoration: "none" }}>
+          Read the full Terms of Service <Icon name="chevron-right" size={12} color={T.gold} />
         </a>
       </InfoModal>
 
