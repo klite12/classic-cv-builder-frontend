@@ -952,6 +952,59 @@ function CVThumb({ cv, width = 160 }) {
    ONBOARDING
    ========================================================================= */
 
+function OnboardingHero() {
+  return (
+    <svg viewBox="0 0 380 460" style={{ width: "100%", maxWidth: 300, borderRadius: 26, boxShadow: "0 18px 40px rgba(0,0,0,.28)" }}>
+      <defs>
+        <clipPath id="cardClip"><rect x="0" y="0" width="380" height="460" rx="26" /></clipPath>
+        <linearGradient id="blazer" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#136B55" />
+          <stop offset="100%" stopColor="#082A22" />
+        </linearGradient>
+      </defs>
+      <g clipPath="url(#cardClip)">
+        <rect x="0" y="0" width="380" height="460" fill="#0E4B3F" />
+        <rect x="236" y="18" width="150" height="230" rx="14" fill="#E8873B" />
+        <g stroke="#DDA857" strokeWidth="3" strokeLinecap="round">
+          <line x1="190" y1="200" x2="190" y2="120" />
+          <line x1="190" y1="200" x2="238" y2="132" />
+          <line x1="190" y1="200" x2="262" y2="168" />
+          <line x1="190" y1="200" x2="272" y2="212" />
+          <line x1="190" y1="200" x2="266" y2="256" />
+          <line x1="190" y1="200" x2="242" y2="290" />
+          <line x1="190" y1="200" x2="138" y2="132" />
+          <line x1="190" y1="200" x2="114" y2="168" />
+          <line x1="190" y1="200" x2="104" y2="212" />
+          <line x1="190" y1="200" x2="110" y2="256" />
+          <line x1="190" y1="200" x2="134" y2="290" />
+        </g>
+        <circle cx="190" cy="200" r="72" fill="none" stroke="#DDA857" strokeWidth="1.4" opacity="0.55" />
+        <path d="M104 460 L104 356 Q104 278 190 268 Q276 278 276 356 L276 460 Z" fill="url(#blazer)" />
+        <path d="M158 300 L190 276 L190 322 Z" fill="#C1852E" />
+        <path d="M222 300 L190 276 L190 322 Z" fill="#DDA857" />
+        <rect x="172" y="230" width="36" height="56" rx="16" fill="#F1E7D2" />
+        <circle cx="190" cy="200" r="62" fill="#FBF7EE" />
+        <g stroke="#C1852E" strokeWidth="4" fill="none" strokeLinejoin="round">
+          <rect x="148" y="192" width="34" height="24" rx="6" />
+          <rect x="198" y="192" width="34" height="24" rx="6" />
+          <line x1="182" y1="202" x2="198" y2="202" />
+          <line x1="144" y1="198" x2="132" y2="196" />
+          <line x1="236" y1="198" x2="248" y2="196" />
+        </g>
+        <g transform="translate(246, 340)">
+          <path d="M0 0 L28 0 L28 34 L14 26 L0 34 Z" fill="#C1852E" />
+          <circle cx="14" cy="8" r="15" fill="#DDA857" stroke="#0A3A30" strokeWidth="2" />
+          <path d="M8 8 L12 12 L20 3" fill="none" stroke="#0A3A30" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        </g>
+        <circle cx="46" cy="70" r="7" fill="#DDA857" opacity="0.85" />
+        <circle cx="330" cy="300" r="5" fill="#F1E7D2" opacity="0.7" />
+        <rect x="30" y="150" width="16" height="16" rx="4" fill="#E8873B" transform="rotate(20 38 158)" />
+        <rect x="320" y="90" width="14" height="14" rx="4" fill="#FBF7EE" opacity="0.9" transform="rotate(-15 327 97)" />
+      </g>
+    </svg>
+  );
+}
+
 function Onboarding({ onDone }) {
   const [i, setI] = useState(0);
   const screens = [
@@ -963,12 +1016,12 @@ function Onboarding({ onDone }) {
   const s = screens[i];
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: T.navy, color: "#fff" }}>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40, textAlign: "center" }}>
-        <div style={{ width: 84, height: 84, borderRadius: 20, background: "rgba(255,255,255,.08)", border: `1px solid ${T.goldSoft}55`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 28 }}>
-          <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke={T.goldSoft} strokeWidth="1.4"><rect x="5" y="3" width="14" height="18" rx="1.4" /><path d="M8 8h8M8 11.5h8M8 15h5" strokeLinecap="round" /></svg>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "28px 28px 12px", textAlign: "center" }}>
+        <div style={{ marginBottom: 24, width: "100%", display: "flex", justifyContent: "center" }}>
+          <OnboardingHero />
         </div>
-        <div style={{ fontFamily: "Georgia, serif", fontSize: 25, marginBottom: 12, letterSpacing: 0.3 }}>{s.h}</div>
-        <div style={{ fontSize: 14.5, color: "#C6CBD6", lineHeight: 1.6, maxWidth: 280 }}>{s.t}</div>
+        <div style={{ fontFamily: "Georgia, serif", fontSize: 23, marginBottom: 10, letterSpacing: 0.3 }}>{s.h}</div>
+        <div style={{ fontSize: 13.5, color: "#C6CBD6", lineHeight: 1.6, maxWidth: 280 }}>{s.t}</div>
       </div>
       <div style={{ display: "flex", justifyContent: "center", gap: 7, marginBottom: 26 }}>
         {screens.map((_, idx) => (
